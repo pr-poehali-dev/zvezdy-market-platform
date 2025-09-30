@@ -1,0 +1,15 @@
+{
+  "tests": [
+    {
+      "name": "Get admin stats (requires admin user)",
+      "method": "GET",
+      "path": "/?action=stats&admin_id=1",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "stats": "object"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

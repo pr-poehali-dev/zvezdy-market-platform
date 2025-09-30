@@ -1,3 +1,7 @@
 {
+  "marketplace": "https://functions.poehali.dev/86554048-1434-46fd-8aff-9dc6b8e47047",
+  "tasks": "https://functions.poehali.dev/7143a55e-e579-4039-b98e-fdcac36f5f72",
+  "exchange": "https://functions.poehali.dev/6945e635-5f6d-442d-a81c-ac7758d7653b",
+  "admin": "https://functions.poehali.dev/027633ed-b57e-4954-8451-d768fb2cfa4c",
   "auth": "https://functions.poehali.dev/243a37ce-9933-4e76-a713-fe60061b34ba"
 }

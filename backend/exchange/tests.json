@@ -1,0 +1,15 @@
+{
+  "tests": [
+    {
+      "name": "Get companies list",
+      "method": "GET",
+      "path": "/?action=companies",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "companies": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

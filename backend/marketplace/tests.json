@@ -1,0 +1,15 @@
+{
+  "tests": [
+    {
+      "name": "Get P2P marketplace items",
+      "method": "GET",
+      "path": "/?action=list",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true,
+        "items": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
