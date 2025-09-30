@@ -35,14 +35,35 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             action = event.get('queryStringParameters', {}).get('action', 'list')
             
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                if action == 'list':
+                if action == 'store_gifts':
+                    cur.execute('''
+                        SELECT id, name, description, emoji as image, base_price as price, rarity as category
+                        FROM gifts
+                        ORDER BY base_price ASC
+                    ''')
+                    gifts = cur.fetchall()
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'success': True,
+                            'gifts': [dict(g) for g in gifts]
+                        }, default=str),
+                        'isBase64Encoded': False
+                    }
+                
+                elif action == 'list':
                     cur.execute('''
                         SELECT ug.id as user_gift_id, ug.sale_price, ug.purchased_at,
                                g.*, u.username as seller_name,
-                               (SELECT COUNT(*) FROM gift_transactions WHERE user_gift_id = ug.id) as transaction_count
+                               0 as transaction_count
                         FROM user_gifts ug
                         JOIN gifts g ON ug.gift_id = g.id
-                        JOIN users u ON ug.user_id = u.id
+                        JOIN users u ON ug.owner_id = u.id
                         WHERE ug.is_on_sale = TRUE
                         ORDER BY ug.sale_price ASC
                     ''')
@@ -95,11 +116,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     user_id = event.get('queryStringParameters', {}).get('user_id')
                     
                     cur.execute('''
-                        SELECT ug.*, g.*,
-                               (SELECT COUNT(*) FROM gift_transactions WHERE user_gift_id = ug.id) as transaction_count
+                        SELECT ug.*, g.name, g.emoji as image_emoji, g.description,
+                               0 as transaction_count
                         FROM user_gifts ug
                         JOIN gifts g ON ug.gift_id = g.id
-                        WHERE ug.user_id = %s
+                        WHERE ug.owner_id = %s
                         ORDER BY ug.purchased_at DESC
                     ''', (user_id,))
                     gifts = cur.fetchall()
@@ -126,7 +147,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     user_id = body_data.get('user_id')
                     gift_id = body_data.get('gift_id')
                     
-                    cur.execute('SELECT * FROM gifts WHERE id = %s AND is_active = TRUE', (gift_id,))
+                    cur.execute('SELECT * FROM gifts WHERE id = %s', (gift_id,))
                     gift = cur.fetchone()
                     
                     if not gift:
@@ -143,7 +164,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     cur.execute('SELECT balance FROM users WHERE id = %s', (user_id,))
                     user = cur.fetchone()
                     
-                    if user['balance'] < gift['price']:
+                    if user['balance'] < gift['base_price']:
                         return {
                             'statusCode': 400,
                             'headers': {
@@ -154,30 +175,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             'isBase64Encoded': False
                         }
                     
-                    cur.execute('UPDATE users SET balance = balance - %s WHERE id = %s', (gift['price'], user_id))
+                    cur.execute('UPDATE users SET balance = balance - %s WHERE id = %s', (gift['base_price'], user_id))
                     
                     cur.execute('''
-                        INSERT INTO user_gifts (user_id, gift_id, purchase_price)
+                        INSERT INTO user_gifts (owner_id, gift_id, purchase_price)
                         VALUES (%s, %s, %s)
                         RETURNING id
-                    ''', (user_id, gift_id, gift['price']))
+                    ''', (user_id, gift_id, gift['base_price']))
                     user_gift = cur.fetchone()
-                    
-                    cur.execute('''
-                        INSERT INTO gift_transactions (gift_id, user_gift_id, buyer_id, price, transaction_type)
-                        VALUES (%s, %s, %s, %s, 'store_purchase')
-                    ''', (gift_id, user_gift['id'], user_id, gift['price']))
                     
                     cur.execute('''
                         INSERT INTO balance_transactions (user_id, amount, transaction_type, description)
                         VALUES (%s, %s, 'gift_purchase', %s)
-                    ''', (user_id, -gift['price'], f"Покупка подарка: {gift['name']}"))
-                    
-                    if gift['is_limited']:
-                        cur.execute('''
-                            UPDATE gifts SET remaining_supply = remaining_supply - 1
-                            WHERE id = %s AND remaining_supply > 0
-                        ''', (gift_id,))
+                    ''', (user_id, -gift['base_price'], f"Покупка подарка: {gift['name']}"))
                     
                     conn.commit()
                     
@@ -202,7 +212,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         SELECT ug.*, g.name as gift_name, u.id as seller_id
                         FROM user_gifts ug
                         JOIN gifts g ON ug.gift_id = g.id
-                        JOIN users u ON ug.user_id = u.id
+                        JOIN users u ON ug.owner_id = u.id
                         WHERE ug.id = %s AND ug.is_on_sale = TRUE
                     ''', (user_gift_id,))
                     item = cur.fetchone()
@@ -236,7 +246,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     cur.execute('UPDATE users SET balance = balance + %s WHERE id = %s', (item['sale_price'], item['seller_id']))
                     
                     cur.execute('''
-                        UPDATE user_gifts SET user_id = %s, is_on_sale = FALSE, sale_price = NULL
+                        UPDATE user_gifts SET owner_id = %s, is_on_sale = FALSE, sale_price = NULL
                         WHERE id = %s
                     ''', (buyer_id, user_gift_id))
                     

@@ -56,6 +56,7 @@ const Index = () => {
       setUser(savedUser);
       setBalance(savedUser.balance);
       loadTasks(savedUser.id);
+      loadGifts();
     } else {
       setShowAuthModal(true);
     }
@@ -67,6 +68,27 @@ const Index = () => {
       setTasks(tasksData);
     } catch (error: any) {
       console.error("Error loading tasks:", error);
+    }
+  };
+
+  const loadGifts = async () => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/86554048-1434-46fd-8aff-9dc6b8e47047?action=store_gifts');
+      const data = await response.json();
+      if (data.success && data.gifts) {
+        const formattedGifts = data.gifts.map((g: any) => ({
+          id: g.id,
+          name: g.name,
+          price: g.price,
+          image: g.image,
+          rating: 4,
+          category: g.category || 'Classic',
+          description: g.description || ''
+        }));
+        setGifts(formattedGifts);
+      }
+    } catch (error) {
+      console.error("Error loading gifts:", error);
     }
   };
 
