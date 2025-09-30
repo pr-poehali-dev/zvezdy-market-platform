@@ -187,11 +187,18 @@ const Index = () => {
               </Card>
               
               <div className="flex items-center gap-2">
-                <Avatar className="border-2 border-gold">
-                  <AvatarFallback className="bg-gold text-primary-foreground font-heading">
-                    {user.username.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => window.location.href = '/profile'}
+                  title="Профиль"
+                >
+                  <Avatar className="border-2 border-gold w-10 h-10 cursor-pointer">
+                    <AvatarFallback className="bg-gold text-primary-foreground font-heading">
+                      {user.username.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
