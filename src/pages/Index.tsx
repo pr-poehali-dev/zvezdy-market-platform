@@ -4,34 +4,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Icon from "@/components/ui/icon";
 import { toast } from "sonner";
 import AuthModal from "@/components/AuthModal";
-import { getUser, clearUser, type User } from "@/lib/api";
+import P2PMarket from "@/components/P2PMarket";
+import Exchange from "@/components/Exchange";
+import { getUser, clearUser, saveUser, type User, tasksApi, marketplaceApi } from "@/lib/api";
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [balance, setBalance] = useState(0);
-
-  useEffect(() => {
-    const savedUser = getUser();
-    if (savedUser) {
-      setUser(savedUser);
-      setBalance(savedUser.balance);
-    } else {
-      setShowAuthModal(true);
-    }
-  }, []);
-  const [tasks] = useState([
-    { id: 1, title: "Подписаться на Telegram канал", reward: 500, icon: "Send", completed: false },
-    { id: 2, title: "Лайкнуть пост", reward: 100, icon: "Heart", completed: false },
-    { id: 3, title: "Пригласить друга", reward: 300, icon: "UserPlus", completed: false },
-    { id: 4, title: "Ежедневный вход", reward: 200, icon: "Calendar", completed: true }
-  ]);
-
-  const [gifts] = useState([
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [gifts, setGifts] = useState([
     { id: 1, name: "Золотая звезда", price: 5000, image: "⭐", rating: 5, category: "Premium" },
     { id: 2, name: "Подарочная коробка", price: 3500, image: "🎁", rating: 4, category: "Classic" },
     { id: 3, name: "Трофей победителя", price: 8000, image: "🏆", rating: 5, category: "Exclusive" },
@@ -56,16 +42,30 @@ const Index = () => {
 
   const [rouletteSpinning, setRouletteSpinning] = useState(false);
 
-  const handleTaskComplete = (taskId: number, reward: number) => {
-    setBalance(prev => prev + reward);
-    toast.success(`Задание выполнено! +${reward} звезд`, {
-      description: "Награда зачислена на ваш баланс"
-    });
+  useEffect(() => {
+    const savedUser = getUser();
+    if (savedUser) {
+      setUser(savedUser);
+      setBalance(savedUser.balance);
+      loadTasks(savedUser.id);
+    } else {
+      setShowAuthModal(true);
+    }
+  }, []);
+
+  const loadTasks = async (userId: number) => {
+    try {
+      const tasksData = await tasksApi.getTasks(userId);
+      setTasks(tasksData);
+    } catch (error: any) {
+      console.error("Error loading tasks:", error);
+    }
   };
 
   const handleAuthSuccess = (newUser: User) => {
     setUser(newUser);
     setBalance(newUser.balance);
+    loadTasks(newUser.id);
   };
 
   const handleLogout = () => {
@@ -74,6 +74,55 @@ const Index = () => {
     setBalance(0);
     setShowAuthModal(true);
     toast.success("Вы вышли из аккаунта");
+  };
+
+  const handleBalanceUpdate = async () => {
+    if (!user) return;
+    const response = await fetch(`https://functions.poehali.dev/243a37ce-9933-4e76-a713-fe60061b34ba?user_id=${user.id}`);
+    const data = await response.json();
+    if (data.id) {
+      setBalance(data.balance);
+      const updatedUser = { ...user, balance: data.balance };
+      setUser(updatedUser);
+      saveUser(updatedUser);
+    }
+  };
+
+  const handleTaskComplete = async (taskId: number, reward: number) => {
+    if (!user) return;
+
+    try {
+      const result = await tasksApi.verifyTask(user.id, taskId);
+      if (result.verified) {
+        setBalance(result.new_balance);
+        const updatedUser = { ...user, balance: result.new_balance };
+        setUser(updatedUser);
+        saveUser(updatedUser);
+        toast.success(`Задание выполнено! +${reward} звезд`, {
+          description: "Награда зачислена на ваш баланс"
+        });
+        loadTasks(user.id);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Ошибка выполнения задания");
+    }
+  };
+
+  const handleBuyGift = async (giftId: number, price: number) => {
+    if (!user) return;
+
+    if (balance < price) {
+      toast.error("Недостаточно звезд");
+      return;
+    }
+
+    try {
+      await marketplaceApi.buyFromStore(user.id, giftId);
+      toast.success("Подарок куплен!");
+      handleBalanceUpdate();
+    } catch (error: any) {
+      toast.error(error.message || "Ошибка покупки");
+    }
   };
 
   const handleRouletteSpin = () => {
@@ -159,14 +208,22 @@ const Index = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="tasks" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-muted">
+          <TabsList className="grid w-full grid-cols-6 bg-muted">
             <TabsTrigger value="tasks" className="data-[state=active]:bg-gold data-[state=active]:text-primary-foreground">
               <Icon name="CheckSquare" className="mr-2" size={18} />
               Задания
             </TabsTrigger>
             <TabsTrigger value="marketplace" className="data-[state=active]:bg-gold data-[state=active]:text-primary-foreground">
               <Icon name="ShoppingBag" className="mr-2" size={18} />
-              Маркетплейс
+              Магазин
+            </TabsTrigger>
+            <TabsTrigger value="p2p" className="data-[state=active]:bg-gold data-[state=active]:text-primary-foreground">
+              <Icon name="Users" className="mr-2" size={18} />
+              P2P
+            </TabsTrigger>
+            <TabsTrigger value="exchange" className="data-[state=active]:bg-gold data-[state=active]:text-primary-foreground">
+              <Icon name="TrendingUp" className="mr-2" size={18} />
+              Биржа
             </TabsTrigger>
             <TabsTrigger value="roulette" className="data-[state=active]:bg-gold data-[state=active]:text-primary-foreground">
               <Icon name="Circle" className="mr-2" size={18} />
@@ -249,7 +306,10 @@ const Index = () => {
                       <Icon name="Coins" className="text-gold" size={18} />
                       <span className="text-gold">{gift.price.toLocaleString()}</span>
                     </div>
-                    <Button className="w-full bg-blue hover:bg-blue/90 text-white font-heading transition-all duration-300">
+                    <Button
+                      onClick={() => handleBuyGift(gift.id, gift.price)}
+                      className="w-full bg-blue hover:bg-blue/90 text-white font-heading transition-all duration-300"
+                    >
                       <Icon name="ShoppingCart" className="mr-2" size={16} />
                       Купить
                     </Button>
@@ -257,6 +317,14 @@ const Index = () => {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          <TabsContent value="p2p" className="animate-fade-in">
+            <P2PMarket userId={user.id} onBalanceUpdate={handleBalanceUpdate} />
+          </TabsContent>
+
+          <TabsContent value="exchange" className="animate-fade-in">
+            <Exchange userId={user.id} onBalanceUpdate={handleBalanceUpdate} />
           </TabsContent>
 
           <TabsContent value="roulette" className="space-y-4 animate-fade-in">
