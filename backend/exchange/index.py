@@ -39,7 +39,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 if action == 'companies':
                     cur.execute('''
                         SELECT c.*,
-                               ROUND(((c.current_price - c.base_price)::numeric / c.base_price::numeric) * 100, 2) as change_percent
+                               0 as change_percent
                         FROM companies c
                         ORDER BY c.id
                     ''')

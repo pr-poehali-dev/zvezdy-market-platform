@@ -18,18 +18,26 @@ const Index = () => {
   const [balance, setBalance] = useState(0);
   const [tasks, setTasks] = useState<any[]>([]);
   const [gifts, setGifts] = useState([
-    { id: 1, name: "Золотая звезда", price: 5000, image: "⭐", rating: 5, category: "Premium" },
-    { id: 2, name: "Подарочная коробка", price: 3500, image: "🎁", rating: 4, category: "Classic" },
-    { id: 3, name: "Трофей победителя", price: 8000, image: "🏆", rating: 5, category: "Exclusive" },
-    { id: 4, name: "Бриллиант", price: 12000, image: "💎", rating: 5, category: "Luxury" },
-    { id: 5, name: "Корона короля", price: 15000, image: "👑", rating: 5, category: "Luxury" },
-    { id: 6, name: "Ракета", price: 6000, image: "🚀", rating: 4, category: "Premium" },
-    { id: 7, name: "Торт", price: 2500, image: "🎂", rating: 3, category: "Classic" },
-    { id: 8, name: "Розы", price: 3000, image: "🌹", rating: 4, category: "Classic" },
-    { id: 9, name: "Шампанское", price: 4500, image: "🍾", rating: 4, category: "Premium" },
-    { id: 10, name: "Огонь", price: 7000, image: "🔥", rating: 5, category: "Exclusive" },
-    { id: 11, name: "Единорог", price: 10000, image: "🦄", rating: 5, category: "Exclusive" },
-    { id: 12, name: "Дракон", price: 18000, image: "🐉", rating: 5, category: "Luxury" }
+    { id: 1, name: "Леденец", price: 100, image: "🍭", rating: 2, category: "Starter", description: "Маленький и сладкий подарок для начинающих" },
+    { id: 2, name: "Шоколадка", price: 250, image: "🍫", rating: 2, category: "Starter", description: "Вкусный шоколад поднимет настроение" },
+    { id: 3, name: "Воздушный шар", price: 500, image: "🎈", rating: 3, category: "Classic", description: "Яркий и веселый подарок на праздник" },
+    { id: 4, name: "Цветок", price: 800, image: "🌺", rating: 3, category: "Classic", description: "Красивый тропический цветок" },
+    { id: 5, name: "Торт", price: 1200, image: "🎂", rating: 3, category: "Classic", description: "Праздничный торт для особого случая" },
+    { id: 6, name: "Розы", price: 1500, image: "🌹", rating: 3, category: "Classic", description: "Букет красных роз - символ любви" },
+    { id: 7, name: "Плюшевый мишка", price: 2000, image: "🧸", rating: 3, category: "Classic", description: "Милый плюшевый мишка для дорогих людей" },
+    { id: 8, name: "Подарочная коробка", price: 3000, image: "🎁", rating: 4, category: "Premium", description: "Красиво упакованный сюрприз" },
+    { id: 9, name: "Шампанское", price: 4000, image: "🍾", rating: 4, category: "Premium", description: "Бутылка игристого для торжества" },
+    { id: 10, name: "Золотая звезда", price: 5000, image: "⭐", rating: 4, category: "Premium", description: "Сияющая звезда успеха" },
+    { id: 11, name: "Ракета", price: 6500, image: "🚀", rating: 4, category: "Premium", description: "Символ амбиций и движения вперёд" },
+    { id: 12, name: "Огонь", price: 8000, image: "🔥", rating: 5, category: "Exclusive", description: "Пламя страсти и энергии" },
+    { id: 13, name: "Трофей победителя", price: 10000, image: "🏆", rating: 5, category: "Exclusive", description: "Кубок чемпиона для лучших из лучших" },
+    { id: 14, name: "Бриллиант", price: 15000, image: "💎", rating: 5, category: "Exclusive", description: "Драгоценный камень вечной ценности" },
+    { id: 15, name: "Единорог", price: 20000, image: "🦄", rating: 5, category: "Luxury", description: "Магическое мифическое существо" },
+    { id: 16, name: "Корона", price: 25000, image: "👑", rating: 5, category: "Luxury", description: "Королевская корона власти и величия" },
+    { id: 17, name: "Замок", price: 35000, image: "🏰", rating: 5, category: "Luxury", description: "Роскошный замок мечты" },
+    { id: 18, name: "Дракон", price: 50000, image: "🐉", rating: 5, category: "Legendary", description: "Легендарный восточный дракон удачи" },
+    { id: 19, name: "Космический корабль", price: 75000, image: "🛸", rating: 5, category: "Legendary", description: "Межгалактический звездолёт" },
+    { id: 20, name: "Галактика", price: 100000, image: "🌌", rating: 5, category: "Legendary", description: "Целая галактика в подарок - символ бесконечности" }
   ]);
 
   const [leaderboard] = useState([
@@ -301,6 +309,9 @@ const Index = () => {
                         {gift.category}
                       </Badge>
                       <CardTitle className="text-center font-heading text-base">{gift.name}</CardTitle>
+                      <CardDescription className="text-center text-xs min-h-[40px]">
+                        {gift.description}
+                      </CardDescription>
                       <div className="flex gap-1">
                         {Array.from({ length: gift.rating }).map((_, i) => (
                           <Icon key={i} name="Star" size={14} className="text-gold fill-gold" />

@@ -28,8 +28,8 @@ const Admin = () => {
   const [addBalanceReason, setAddBalanceReason] = useState("");
 
   useEffect(() => {
-    if (!user || !user.is_admin) {
-      toast.error("Доступ запрещен");
+    if (!user) {
+      toast.error("Необходима авторизация");
       navigate("/");
       return;
     }
